@@ -1,3 +1,16 @@
+update
+6th Sep, 09:37
+
+please use FranecReader.mod.chi.draw_mf() like this,
+`
+lkt = bigtab.look_back_time(np.where(bigtab.model == bigtab.when_a_dep)[0][0])
+title = r'$\log(\tau_{-1}-\tau)+0.5$%.2f'%lkt
+FranecReader.mod.chi.draw_mf(
+    nucs=["H", "he4"],
+    title=title
+)
+`
+_________________________________________________________________________
 5th Sep, 23:09
 
 070_for_test is partial FRANEC data of simulation Over_00/070

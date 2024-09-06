@@ -51,10 +51,11 @@ class mod_chi(FranecData):
     index = None
     mass = None
     var_names = None
+    look_back_time = None
     
     def data(self, var_name: str, dtype = float) -> np.ndarray:
         df = pd.read_csv(
-            self.path+f'/mods/00{self.index}.chi', 
+            self.path+f'/mods/%07d.chi'%self.index, 
             sep='\s+', 
             skiprows=1, 
             names=self.var_names, 
@@ -68,7 +69,7 @@ class mod_chi(FranecData):
     def __init__(self, path:str, index:int):
         FranecData.__init__(self, path=path)
         self.index = index
-        with open(self.path+f'/mods/00{self.index}.chi', 'r') as file:
+        with open(self.path+f'/mods/%07d.chi'%self.index, 'r') as file:
             self.var_names = re.split(r'\s{2,}', file.readline().strip())
         self.mass = self.data("M")
         return None  
@@ -104,9 +105,13 @@ class mod_chi(FranecData):
     def draw_mf(
         self,
         nucs=[],
+        title=None,
         ylim=[1e-8, 1.5],
         xlim=None,
         yscale='log',
+        legend=True,
+        legend_loc='center right',
+        legend_frameon=False,
         show=False
         ) -> None:
         if xlim is None:
@@ -116,9 +121,13 @@ class mod_chi(FranecData):
         plt.ylim(ylim[0], ylim[1])
         plt.xlim(xlim[0], xlim[1])
         plt.yscale(yscale)
-        plt.legend()
+        if legend:
+            plt.legend(loc=legend_loc, frameon=legend_frameon)
         plt.xlabel('enclosed mass (solar mass)')
         plt.ylabel('mass fraction')
+        if not title is None:
+            #plt.title(r'$\log(\tau_{-1}-\tau)+0.5$%.2f'%)
+            plt.title(title)
         if show:
             plt.show()
     
@@ -129,7 +138,7 @@ class mod_f01(FranecData):
     
     def data(self, var_name: str, dtype = float) -> np.ndarray:
         df = pd.read_csv(
-            self.path+f'/mods/00{self.index}.f01', 
+            self.path+f'/mods/%07d.f01'%self.index, 
             sep='\s+', 
             skiprows=1, 
             names=self.var_names, 
@@ -143,7 +152,7 @@ class mod_f01(FranecData):
     def __init__(self, path:str, index:int):
         FranecData.__init__(self, path=path)
         self.index = index
-        with open(self.path+f'/mods/00{self.index}.f01', 'r') as file:
+        with open(self.path+f'/mods/%07d.f01'%self.index, 'r') as file:
             var_names = re.split(r'\s{2,}', file.readline().strip())
         self.var_names = deduplicate_var_names(var_names) + ['xxx']
         self.mass = self.data("M/MTOT")
@@ -219,6 +228,23 @@ class bigtab(FranecData):
         
         return None
     
+    
+    def look_back_time(self) -> np.ndarray:
+        """
+        Get look back time defined as log10(t_final - t).
+
+        Returns:
+            np.ndarray: The look back time data corresponding to every model.
+        """
+        age = self.data('Age(yr)')
+        xx = age[-1]
+        age = xx-age
+        #Avoid boundary zeros
+        age[-1] = age[-1] / 2.0
+        age[0] = age[1] / 2.0
+        age = np.log10(age)
+        return age
+    
     def when_he_depl(self, crit=1e-5) -> int:
         for i, item in enumerate(self.data('He-cen')):
             if item < crit:
@@ -245,7 +271,7 @@ class bigtab(FranecData):
         plt.xlim(xlim[0], xlim[1])       
         plt.ylim(ylim[0], ylim[1])
         if legend:
-            plt.legend()
+            plt.legend(loc='center right', frameon=False)
         if show:
             plt.show()     
         
@@ -265,7 +291,7 @@ def draw_mf_and_eps(
     ax1.set_ylim(1e-8, 1.5)
     ax1.set_xlabel("enclosed mass (solar mass)")
     ax1.set_ylabel("mass fraction")
-    ax1.legend(loc='lower left')
+    ax1.legend(loc='lower left', frameon=False)
     
     ax2 = ax1.twinx()
     ax2.plot(xx, yy, label='log(E_NUC)', color='k', linestyle='--')
