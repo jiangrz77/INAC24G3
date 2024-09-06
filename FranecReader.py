@@ -51,6 +51,7 @@ class mod_chi(FranecData):
     index = None
     mass = None
     var_names = None
+    look_back_time = None
     
     def data(self, var_name: str, dtype = float) -> np.ndarray:
         df = pd.read_csv(
@@ -104,9 +105,13 @@ class mod_chi(FranecData):
     def draw_mf(
         self,
         nucs=[],
+        title=None,
         ylim=[1e-8, 1.5],
         xlim=None,
         yscale='log',
+        legend=True,
+        legend_loc='center right',
+        legend_frameon=False,
         show=False
         ) -> None:
         if xlim is None:
@@ -116,10 +121,13 @@ class mod_chi(FranecData):
         plt.ylim(ylim[0], ylim[1])
         plt.xlim(xlim[0], xlim[1])
         plt.yscale(yscale)
-        plt.legend(loc='center right', frameon=False)
+        if legend:
+            plt.legend(loc=legend_loc, frameon=legend_frameon)
         plt.xlabel('enclosed mass (solar mass)')
         plt.ylabel('mass fraction')
-        plt.title(r'$\log(\tau_{-1}-\tau)+0.5$%.2f'%)
+        if not title is None:
+            #plt.title(r'$\log(\tau_{-1}-\tau)+0.5$%.2f'%)
+            plt.title(title)
         if show:
             plt.show()
     
@@ -219,6 +227,23 @@ class bigtab(FranecData):
         self.c12_cen = np.array(self.c12_cen)
         
         return None
+    
+    
+    def look_back_time(self) -> np.ndarray:
+        """
+        Get look back time defined as log10(t_final - t).
+
+        Returns:
+            np.ndarray: The look back time data corresponding to every model.
+        """
+        age = self.data('Age(yr)')
+        xx = age[-1]
+        age = xx-age
+        #Avoid boundary zeros
+        age[-1] = age[-1] / 2.0
+        age[0] = age[1] / 2.0
+        age = np.log10(age)
+        return age
     
     def when_he_depl(self, crit=1e-5) -> int:
         for i, item in enumerate(self.data('He-cen')):
